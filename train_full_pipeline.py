@@ -136,7 +136,7 @@ if __name__ == "__main__":
         f"python train.py \
             -s {args.scene_path} \
             -c {gs_checkpoint_dir} \
-            -i 7_000 \
+            -i 1_000 \
             -r {args.regularization_type} \
             -l {args.surface_level} \
             -v {args.n_vertices_in_mesh} \
