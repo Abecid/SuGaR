@@ -1,4 +1,6 @@
 import argparse
+import os
+
 from sugar_utils.general_utils import str2bool
 from sugar_trainers.coarse_density import coarse_training_with_density_regularization
 from sugar_trainers.coarse_sdf import coarse_training_with_sdf_regularization
@@ -89,6 +91,10 @@ if __name__ == "__main__":
     parser.add_argument('--gpu', type=int, default=0, help='Index of GPU device to use.')
     parser.add_argument('--white_background', type=str2bool, default=False, help='Use a white background instead of black.')
 
+    # Pre-computed paths
+    parser.add_argument("--refined_sugar_path", type=str, default=None,
+                        help="(Optional) If provided, will skip the refined SuGaR training and use the given path to the refined SuGaR model.")
+
     # Parse arguments
     args = parser.parse_args()
     if args.low_poly:
@@ -125,14 +131,16 @@ if __name__ == "__main__":
         'gpu': args.gpu,
         'white_background': args.white_background,
     })
-    if args.regularization_type == 'sdf':
-        coarse_sugar_path = coarse_training_with_sdf_regularization(coarse_args)
-    elif args.regularization_type == 'density':
-        coarse_sugar_path = coarse_training_with_density_regularization(coarse_args)
-    elif args.regularization_type == 'dn_consistency':
-        coarse_sugar_path = coarse_training_with_density_regularization_and_dn_consistency(coarse_args)
-    else:
-        raise ValueError(f'Unknown regularization type: {args.regularization_type}')
+    coarse_sugar_path = None
+    if args.refined_sugar_path is None:
+        if args.regularization_type == 'sdf':
+            coarse_sugar_path = coarse_training_with_sdf_regularization(coarse_args)
+        elif args.regularization_type == 'density':
+            coarse_sugar_path = coarse_training_with_density_regularization(coarse_args)
+        elif args.regularization_type == 'dn_consistency':
+            coarse_sugar_path = coarse_training_with_density_regularization_and_dn_consistency(coarse_args)
+        else:
+            raise ValueError(f'Unknown regularization type: {args.regularization_type}')
     
     
     # ----- Extract mesh from coarse SuGaR -----
@@ -154,7 +162,9 @@ if __name__ == "__main__":
         'use_marching_cubes': False,
         'use_vanilla_3dgs': False,
     })
-    coarse_mesh_path = extract_mesh_from_coarse_sugar(coarse_mesh_args)[0]
+    coarse_mesh_path = None
+    if args.refined_sugar_path is None:
+        coarse_mesh_path = extract_mesh_from_coarse_sugar(coarse_mesh_args)[0]
     
     
     # ----- Refine SuGaR -----
@@ -175,8 +185,10 @@ if __name__ == "__main__":
         'gpu': args.gpu,
         'white_background': args.white_background,
     })
-    refined_sugar_path = refined_training(refined_args)
-    
+    if args.refined_sugar_path is None:
+        refined_sugar_path = refined_training(refined_args)
+    else:
+        refined_sugar_path = args.refined_sugar_path
     
     # ----- Extract mesh and texture from refined SuGaR -----
     if args.export_uv_textured_mesh:

@@ -83,6 +83,10 @@ if __name__ == "__main__":
     parser.add_argument('--gpu', type=int, default=0, help='Index of GPU device to use.')
     parser.add_argument('--white_background', type=str2bool, default=False, help='Use a white background instead of black.')
 
+    # Pre-computed paths
+    parser.add_argument("--refined_sugar_path", type=str, default=None,
+                        help="(Optional) If provided, will skip the refined SuGaR training and use the given path to the refined SuGaR model.")
+
     # Parse arguments
     args = parser.parse_args()
     if args.low_poly:
@@ -130,6 +134,11 @@ if __name__ == "__main__":
         gs_checkpoint_dir = args.gs_output_dir
         if gs_checkpoint_dir[-1] != os.path.sep:
             gs_checkpoint_dir += os.path.sep
+
+    precomputed_paths = ""
+    if args.refined_sugar_path is not None:
+        precomputed_paths += f" --refined_sugar_path {args.refined_sugar_path} "
+        print("A refined SuGaR model path was provided. Skipping the refined SuGaR training.")
     
     # Runs the train.py python script with the given arguments
     os.system(
@@ -157,5 +166,6 @@ if __name__ == "__main__":
             --refinement_time {args.refinement_time} \
             --eval {args.eval} \
             --gpu {args.gpu} \
-            --white_background {args.white_background}"
+            --white_background {args.white_background}" +
+            precomputed_paths
     )
