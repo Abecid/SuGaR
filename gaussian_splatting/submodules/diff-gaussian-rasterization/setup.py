@@ -10,8 +10,28 @@
 #
 
 from setuptools import setup
-from torch.utils.cpp_extension import CUDAExtension, BuildExtension
 import os
+import shutil
+import torch.utils.cpp_extension as torch_cpp_extension
+
+
+def _has_nvcc(cuda_home: str) -> bool:
+    """Return True when ``nvcc`` exists inside ``cuda_home``."""
+    if not cuda_home:
+        return False
+    return os.path.exists(os.path.join(cuda_home, "bin", "nvcc"))
+
+
+cuda_home = torch_cpp_extension.CUDA_HOME
+if not _has_nvcc(cuda_home):
+    nvcc_path = shutil.which("nvcc")
+    if nvcc_path:
+        cuda_home = os.path.dirname(os.path.dirname(nvcc_path))
+        torch_cpp_extension.CUDA_HOME = cuda_home
+        os.environ.setdefault("CUDA_HOME", cuda_home)
+
+CUDAExtension = torch_cpp_extension.CUDAExtension
+BuildExtension = torch_cpp_extension.BuildExtension
 os.path.dirname(os.path.abspath(__file__))
 
 setup(
